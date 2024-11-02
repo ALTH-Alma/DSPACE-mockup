@@ -35,89 +35,111 @@
         </div>
       </div>
     </div>
-  
-    <div style="align-items: center;">
-      <button @click="verStatus" class="btn btn-secondary mt-3">Status</button>
-    </div>
   </template>
   
   <script setup lang="ts">
-  import { ref } from 'vue';
-  import axios from 'axios';
-  import { v4 as uuidv4 } from 'uuid';
-  
-  //HOST:localhost PORT:4000 npm run dev
+    import { ref, onMounted } from 'vue';
+    import axios from 'axios';
+    import { useRouter } from '#vue-router';
 
-  const email = ref('');
-  const password = ref('');
-  const error = ref<string | null>(null);
+    const router = useRouter();
+    
+    const email = ref('');
+    const password = ref('');
+    const error = ref<string | null>(null);
+    const csrfTokenVerify = ref<string | null>(null);
+    const authToken = ref<string | null>(null);
+    const authStatus = ref(false);
 
-  const runtimeConfig = useRuntimeConfig();
-  const backBaseUrl = runtimeConfig.public.API_BASE_URL;
-  const API_URL_LOGIN = `${backBaseUrl}/authn/login`;
-  
 
-  const login = async () => {
-      console.log('Iniciando sesión...');
-      console.log('RUTA', API_URL_LOGIN);
-  
-      try {
-          // Generar token CSRF random
-          const csrfToken = uuidv4();
-          document.cookie = `DSPACE-XSRF-COOKIE=${csrfToken}; path=/`;
-  
-          // Generar un ID de correlación único para la solicitud
-          const correlationId = uuidv4();
-  
-          const params = new URLSearchParams();
-          params.append('user', email.value);
-          params.append('password', password.value);
+    const runtimeConfig = useRuntimeConfig();
+    const backBaseUrl = runtimeConfig.public.API_BASE_URL;
+    
+    const getCsrfToken = async () => {
+        try {
+        const response = await axios.get(`${backBaseUrl}/security/csrf`, {
+            headers: {
+            'Accept': 'application/json, text/plain, */*',
+            },
+            withCredentials: true,
+        });
 
-          const response = await axios.post(`${API_URL_LOGIN}`, params, {
-              headers: {
-                  'Accept': 'application/json, text/plain, */*',
-                  'Accept-Encoding': 'gzip, deflate, br',
-                  'Accept-Language': 'es;q=1,es-CL;q=0.1,en-US;q=0.08,en;q=0.07',
-                  'Connection': 'keep-alive',
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                  'X-CORRELATION-ID': correlationId,
-                  'X-REFERRER': '/home',
-                  'X-XSRF-TOKEN': csrfToken,
-              },
-              withCredentials: false, 
-          });
+        csrfTokenVerify.value = response.headers['dspace-xsrf-token'] || null;
+        console.log('Token CSRF obtenido:', csrfTokenVerify.value);
+        return csrfTokenVerify.value;
+        } catch (err) {
+        console.error('Error al verificar el estado:', err);
+        return null;
+        }
+    };
   
-          if (response.headers.authorization) {
-              document.cookie = `TOKENITEM=${response.headers.authorization}; path=/`;
-          } else {
-              throw new Error('Falta el token de autenticación');
-          }
-      } catch (err) {
-          error.value = (err as Error).message;
-          console.error('Error:', err);
-      }
-  };
-  
-  // Verificar el estado de autenticación
-  const API_URL_STATUS = `${backBaseUrl}/authn/status`;
-  const verStatus = async () => {
-      console.log('Verificando estatus...');
-      console.log('RUTA', API_URL_STATUS);
-  
-      try {
-          const response = await axios.get(`${API_URL_STATUS}`, {
-              headers: {
-                  'Accept': 'application/json, text/plain, */*',
-                  'X-CORRELATION-ID': uuidv4(),
-              },
-              withCredentials: true,
-          });
-          console.log(response.data);
-      } catch (err) {
-          console.error('Error al verificar el estado:', err);
-      }
-  };
-  </script>
+    const API_URL_LOGIN = `${backBaseUrl}/authn/login`;
+    const login = async () => {
+        console.log('Iniciando sesión...');
+        try {
+            const csrfTokenCookie = await getCsrfToken();
+            const params = new URLSearchParams();
+            params.append('user', email.value);
+            params.append('password', password.value);
+
+            const response = await axios.post(`${API_URL_LOGIN}`, params, {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json, text/plain, */*',
+                'X-XSRF-TOKEN': csrfTokenCookie,
+            },
+            withCredentials: true,
+            });
+
+            if (response.headers.authorization) {
+                console.log('Respuesta:', response.headers);
+                authToken.value = response.headers.authorization;
+                console.log('Token de autenticación almacenado:', authToken.value);
+            } else {
+                throw new Error('Falta el token de autenticación');
+            }
+        } catch (err) {
+            error.value = (err as Error).message;
+            console.error('Error:', err);
+        } finally {
+            email.value = '';
+            password.value = '';
+            verStatus();
+        }
+    };
+
+    const API_URL_STATUS = `${backBaseUrl}/authn/status`;
+    const verStatus = async () => {
+        console.log('Verificando estatus...');
+        try {
+            const response = await axios.get(`${API_URL_STATUS}`, {
+            headers: { 
+                'Accept': 'application/json, text/plain, */*',
+                'Authorization': authToken.value,
+            },
+            withCredentials: true,
+            });
+            console.log(response.data);
+            authStatus.value = response.data.authenticated;
+        } catch (err) {
+            console.error('Error al verificar el estado:', err);
+            authStatus.value = false;
+        } finally {
+            goHome();
+        }
+    };
+
+    const goHome = () => {
+        if (authStatus.value) {
+            const token = authToken.value ?? "";
+            localStorage.setItem('authToken', token);
+            router.push('/home-homie');
+        } else {
+            console.log('No autorizado');
+        }
+    }
+
+</script>
   
   
 <style scoped>
