@@ -38,7 +38,7 @@
   </template>
   
   <script setup lang="ts">
-    import { ref, onMounted } from 'vue';
+    import { ref } from 'vue';
     import axios from 'axios';
     import { useRouter } from '#vue-router';
 
@@ -48,9 +48,9 @@
     const password = ref('');
     const error = ref<string | null>(null);
     const csrfTokenVerify = ref<string | null>(null);
+    const xsrfToken = ref<string | null>(null);
     const authToken = ref<string | null>(null);
     const authStatus = ref(false);
-
 
     const runtimeConfig = useRuntimeConfig();
     const backBaseUrl = runtimeConfig.public.API_BASE_URL;
@@ -72,12 +72,13 @@
         return null;
         }
     };
-  
+
     const API_URL_LOGIN = `${backBaseUrl}/authn/login`;
     const login = async () => {
         console.log('Iniciando sesión...');
         try {
             const csrfTokenCookie = await getCsrfToken();
+            
             const params = new URLSearchParams();
             params.append('user', email.value);
             params.append('password', password.value);
@@ -95,6 +96,8 @@
                 console.log('Respuesta:', response.headers);
                 authToken.value = response.headers.authorization;
                 console.log('Token de autenticación almacenado:', authToken.value);
+                xsrfToken.value = response.headers['dspace-xsrf-token'] || null;
+                console.log('Token XSRF obtenido:', xsrfToken.value);
             } else {
                 throw new Error('Falta el token de autenticación');
             }
@@ -131,8 +134,8 @@
 
     const goHome = () => {
         if (authStatus.value) {
-            const token = authToken.value ?? "";
-            localStorage.setItem('authToken', token);
+            localStorage.setItem('authToken', authToken.value ?? "");
+            localStorage.setItem('xsrfToken', xsrfToken.value ?? "");
             router.push('/home-homie');
         } else {
             console.log('No autorizado');

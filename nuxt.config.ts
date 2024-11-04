@@ -6,7 +6,9 @@ export default defineNuxtConfig({
     'bootstrap/dist/css/bootstrap.css',
   ],
 
-  plugins: ["~/plugins/axios"],
+  plugins: [
+    '~/plugins/axios', 
+  ],
   imports: {
     dirs: ['stores'],
   },
