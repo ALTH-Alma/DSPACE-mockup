@@ -2,6 +2,10 @@
 
 Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
+## Conexión con DSpace
+
+Para utilizar el mockap es necesario levantar los contenedores de la base de datos y el backend de DSpace. Solo se alcanzo a construir pruebas simples. El login esta funcional y aquellas funciones get que no exigen autenticación funcionan. Los constructores no se lograron hacer funcionar. El problema es el manejo del csfr tocken.
+
 ## Setup
 
 Make sure to install the dependencies:
