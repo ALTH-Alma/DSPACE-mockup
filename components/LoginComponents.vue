@@ -3,7 +3,7 @@
       <div class="row justify-content-center">
         <div class="col-md-6">
           <div class="card">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-success text-white">
             </div>
             <div class="card-body">
               <form @submit.prevent="login">
@@ -27,7 +27,7 @@
                     required
                   />
                 </div>
-                <button type="submit" class="btn btn-primary w-100">Login</button>
+                <button @click="login" type="submit" class="btn btn-success w-100">Login</button>
                 <p v-if="error" class="text-danger mt-3">{{ error }}</p>
               </form>
             </div>
@@ -159,16 +159,12 @@
 
     button {
     margin-top: 15px;
-    background-color: #007bff;
     color: white;
     border: none;
     padding: 10px;
     cursor: pointer;
     }
 
-    button:hover {
-    background-color: #0056b3;
-    }
 
     .error {
     color: red;

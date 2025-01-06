@@ -1,5 +1,4 @@
 export default defineNuxtConfig({
-
   devtools: { enabled: true },
 
   css: [
@@ -9,13 +8,18 @@ export default defineNuxtConfig({
   plugins: [
     '~/plugins/axios', 
   ],
+
   imports: {
     dirs: ['stores'],
   },
+
   components: true,
+
   runtimeConfig: {
     public: {
       API_BASE_URL: 'http://localhost:8080/server/api',
     }
   },
+
+  compatibilityDate: '2025-01-06',
 });
